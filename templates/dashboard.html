@@ -1,0 +1,16 @@
+
+<!DOCTYPE html>
+<html>
+<head><title>Weather Dashboard</title></head>
+<body>
+<h1>Weather Records</h1>
+<table border="1">
+<tr><th>City</th><th>Date</th><th>High</th><th>Low</th><th>Precip</th><th>Condition</th></tr>
+{% for r in records %}
+<tr>
+<td>{{r.city}}</td><td>{{r.date}}</td><td>{{r.temp_high}}</td><td>{{r.temp_low}}</td><td>{{r.precipitation}}</td><td>{{r.condition}}</td>
+</tr>
+{% endfor %}
+</table>
+</body>
+</html>
