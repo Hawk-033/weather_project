@@ -7,7 +7,8 @@ from weather.views import (
     weather_comparison,
     weather_trends,
     user_achievements,
-    api_weather_data
+    api_weather_data,
+    search_location
 )
 
 urlpatterns = [
@@ -18,4 +19,5 @@ urlpatterns = [
     path('trends/', weather_trends, name='weather_trends'),
     path('achievements/', user_achievements, name='achievements'),
     path('api/weather/', api_weather_data, name='api_weather_data'),
+    path('api/search/', search_location, name='search_location'),
 ]
