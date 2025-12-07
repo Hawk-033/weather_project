@@ -8,7 +8,7 @@ venv/
 ENV/
 *.egg-info/
 *.egg
-
+*.pyc
 # IDEs
 .vscode/
 .idea/
