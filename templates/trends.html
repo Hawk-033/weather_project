@@ -126,10 +126,10 @@
         {% for city, records in trends.items %}
             const ctx{{ forloop.counter }} = document.getElementById('chart-{{ forloop.counter }}').getContext('2d');
             const dates{{ forloop.counter }} = [
-                {% for record in records %}'{{ record.date }}'{{ forloop.last|yesno:","|safe }}{% endfor %}
+                {% for record in records %}'{{ record.date }}'{% if not forloop.last %},{% endif %}{% endfor %}
             ];
             const temps{{ forloop.counter }} = [
-                {% for record in records %}{{ record.temp_avg|default:0 }}{{ forloop.last|yesno:","|safe }}{% endfor %}
+                {% for record in records %}{{ record.temp_avg|default:0 }}{% if not forloop.last %},{% endif %}{% endfor %}
             ];
 
             new Chart(ctx{{ forloop.counter }}, {

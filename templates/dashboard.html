@@ -263,6 +263,108 @@
                 padding: 8px;
             }
         }
+
+        .search-box {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .search-box input {
+            flex: 1;
+            min-width: 250px;
+            padding: 12px 15px;
+            border: 2px solid #667eea;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #764ba2;
+        }
+
+        .search-box button {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .search-box button:hover {
+            transform: translateY(-2px);
+        }
+
+        .search-box button:active {
+            transform: translateY(0);
+        }
+
+        .search-results {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .search-results.show {
+            display: block;
+        }
+
+        .search-results h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .search-result-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .search-result-item strong {
+            color: #667eea;
+        }
+
+        .search-loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .search-loading.show {
+            display: block;
+        }
+
+        .search-error {
+            display: none;
+            background: #ffe6e6;
+            color: #cc0000;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #cc0000;
+        }
+
+        .search-error.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -271,6 +373,15 @@
             <h1>🌤️ Weather Dashboard</h1>
             <p>Real-time weather data and analytics</p>
         </header>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search for a location..." />
+            <button onclick="searchLocation()">🔍 Search</button>
+        </div>
+
+        <div id="searchError" class="search-error"></div>
+        <div id="searchLoading" class="search-loading">Searching...</div>
+        <div id="searchResults" class="search-results"></div>
 
         <div class="stats-grid">
             <div class="stat-card">
@@ -306,7 +417,7 @@
             {% if latest_records %}
                 <div>
                     {% for record in latest_records %}
-                        <div class="city-card">
+                        <div class="city-card" onclick="window.location.href='/analytics/{{ record.city }}/';" style="cursor: pointer;">
                             <div class="city-name">{{ record.city }}</div>
                             <div class="city-details">
                                 <div class="detail-item">
@@ -398,5 +509,88 @@
             <p>🌍 Weather Application | Built with Django | Last updated: {% now "Y-m-d H:i" %}</p>
         </footer>
     </div>
+
+    <script>
+        function searchLocation() {
+            const location = document.getElementById('searchInput').value.trim();
+            
+            if (!location) {
+                showError('Please enter a location');
+                return;
+            }
+
+            // Reset displays
+            document.getElementById('searchError').classList.remove('show');
+            document.getElementById('searchResults').classList.remove('show');
+            document.getElementById('searchLoading').classList.add('show');
+
+            // Make API request
+            fetch(`/api/search/?location=${encodeURIComponent(location)}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('searchLoading').classList.remove('show');
+                    
+                    if (data.error) {
+                        showError(data.error);
+                        return;
+                    }
+
+                    displaySearchResults(data);
+                })
+                .catch(error => {
+                    document.getElementById('searchLoading').classList.remove('show');
+                    showError(`Error: ${error.message}`);
+                });
+        }
+
+        function displaySearchResults(data) {
+            const resultsDiv = document.getElementById('searchResults');
+            resultsDiv.innerHTML = '';
+
+            let html = `<h3>🔍 Results for "${data.location || ''}"</h3>`;
+            html += `<p><small>Source: ${data.source === 'database' ? '📊 Database' : '🌐 OpenWeather API'}</small></p>`;
+
+            if (data.source === 'database' && data.records) {
+                // Database records
+                data.records.forEach(record => {
+                    html += `
+                        <div class="search-result-item">
+                            <div><strong>${record.city}</strong> - ${record.date}</div>
+                            <div>🌡️ High: ${record.temp_high}°C | Low: ${record.temp_low}°C | Avg: ${record.temp_avg}°C</div>
+                            <div>💧 Humidity: ${record.humidity || 'N/A'}% | 💨 Wind: ${record.wind_speed || 'N/A'} km/h</div>
+                            <div>🌧️ Precipitation: ${record.precipitation || '0'} mm | 🌤️ Condition: ${record.condition}</div>
+                        </div>
+                    `;
+                });
+            } else if (data.source === 'openweather_api' && data.current) {
+                // API current weather
+                const current = data.current;
+                html += `
+                    <div class="search-result-item">
+                        <div><strong>${data.location}</strong> - Current Weather</div>
+                        <div>🌡️ Temp: ${current.temp}°C | High: ${current.temp_high}°C | Low: ${current.temp_low}°C</div>
+                        <div>💧 Humidity: ${current.humidity}% | 💨 Wind: ${current.wind_speed || 'N/A'} km/h</div>
+                        <div>🌤️ Condition: ${current.condition} (${current.description})</div>
+                    </div>
+                `;
+            }
+
+            resultsDiv.innerHTML = html;
+            resultsDiv.classList.add('show');
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('searchError');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+
+        // Allow search on Enter key
+        document.getElementById('searchInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                searchLocation();
+            }
+        });
+    </script>
 </body>
 </html>
