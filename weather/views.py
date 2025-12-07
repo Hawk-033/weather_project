@@ -2,9 +2,10 @@
 from django.shortcuts import render
 from django.db.models import Avg, Max, Min, Count, Q
 from django.http import JsonResponse
-from .models import WeatherRecord, UserAchievement
+from .models import WeatherRecord, UserAchievement, SearchHistory
 from datetime import datetime, timedelta
 import json
+import requests
 
 def dashboard(request):
     """Main dashboard with recent weather data and analytics"""
@@ -88,7 +89,7 @@ def weather_trends(request):
     """Display weather trends and forecasts"""
     # Get all records from last 60 days grouped by city
     sixty_days_ago = datetime.now().date() - timedelta(days=60)
-    records = WeatherRecord.objects.filter(date__gte=sixty_days_ago).order_by('city', '-date')
+    records = WeatherRecord.objects.filter(date__gte=sixty_days_ago).order_by('city', 'date')
     
     # Group by city
     trends = {}
@@ -185,3 +186,107 @@ def calculate_next_milestone(current_points):
         if current_points < milestone:
             return {'points': milestone, 'remaining': milestone - current_points}
     return {'points': 1500, 'remaining': 1500 - current_points}
+
+
+def search_location(request):
+    """Search for weather data by location - checks database first, then OpenWeather API"""
+    location = request.GET.get('location', '').strip()
+    
+    if not location:
+        return JsonResponse({'error': 'Location parameter is required'}, status=400)
+    
+    # First, try to find in database
+    db_records = WeatherRecord.objects.filter(
+        city__iexact=location
+    ).order_by('-date')[:7]
+    
+    if db_records.exists():
+        # Found in database - save to search history
+        SearchHistory.objects.create(
+            location=location,
+            source='database',
+            result_count=len(db_records),
+            found=True
+        )
+        
+        # Found in database
+        data = {
+            'source': 'database',
+            'location': location,
+            'records': [{
+                'city': r.city,
+                'date': r.date.isoformat(),
+                'temp_high': r.temp_high,
+                'temp_low': r.temp_low,
+                'temp_avg': r.temp_avg,
+                'precipitation': r.precipitation,
+                'humidity': r.humidity,
+                'wind_speed': r.wind_speed,
+                'condition': r.get_condition_display(),
+            } for r in db_records]
+        }
+        return JsonResponse(data)
+    
+    # Not in database, try OpenWeather API
+    try:
+        # You need to set your OpenWeather API key
+        api_key = 'b9886e11e1a6240e380cfa855fafc9da'  # Replace with actual API key
+        
+        # Get current weather
+        url = f'https://api.openweathermap.org/data/2.5/weather?q={location}&appid={api_key}&units=metric'
+        response = requests.get(url, timeout=5)
+        
+        if response.status_code == 200:
+            weather_data = response.json()
+            
+            # Save successful API search to history
+            SearchHistory.objects.create(
+                location=location,
+                source='api',
+                result_count=1,
+                found=True
+            )
+            
+            # Format the response
+            data = {
+                'source': 'openweather_api',
+                'location': weather_data.get('name', location),
+                'current': {
+                    'temp': weather_data['main']['temp'],
+                    'temp_high': weather_data['main']['temp_max'],
+                    'temp_low': weather_data['main']['temp_min'],
+                    'humidity': weather_data['main']['humidity'],
+                    'wind_speed': weather_data.get('wind', {}).get('speed', None),
+                    'condition': weather_data['weather'][0]['main'],
+                    'description': weather_data['weather'][0]['description'],
+                }
+            }
+            return JsonResponse(data)
+        else:
+            # Save failed search to history
+            SearchHistory.objects.create(
+                location=location,
+                source='api',
+                result_count=0,
+                found=False
+            )
+            return JsonResponse({'error': f'Location not found: {location}'}, status=404)
+    
+    except requests.exceptions.RequestException as e:
+        # Save failed API request to history
+        SearchHistory.objects.create(
+            location=location,
+            source='api',
+            result_count=0,
+            found=False
+        )
+        return JsonResponse({'error': f'API request failed: {str(e)}'}, status=500)
+    except Exception as e:
+        # Save unexpected error to history
+        SearchHistory.objects.create(
+            location=location,
+            source='api',
+            result_count=0,
+            found=False
+        )
+        return JsonResponse({'error': f'An error occurred: {str(e)}'}, status=500)

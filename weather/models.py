@@ -80,3 +80,24 @@ class UserAchievement(models.Model):
 
     def __str__(self):
         return f"Achievement: {self.achievement_type} for user {self.user_id}"
+
+
+class SearchHistory(models.Model):
+    location = models.CharField(max_length=100, db_index=True)
+    source = models.CharField(
+        max_length=20,
+        choices=[('database', 'Database'), ('api', 'OpenWeather API')],
+    )
+    searched_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    result_count = models.IntegerField(default=0)
+    found = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-searched_at']
+        indexes = [
+            models.Index(fields=['location', '-searched_at']),
+            models.Index(fields=['-searched_at']),
+        ]
+
+    def __str__(self):
+        return f"Search: {self.location} ({self.source}) - {self.searched_at}"

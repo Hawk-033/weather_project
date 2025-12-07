@@ -1,6 +1,6 @@
 
 from django.contrib import admin
-from .models import WeatherRecord, UserWeatherPreference, UserAchievement
+from .models import WeatherRecord, UserWeatherPreference, UserAchievement, SearchHistory
 
 @admin.register(WeatherRecord)
 class WeatherRecordAdmin(admin.ModelAdmin):
@@ -41,3 +41,12 @@ class UserAchievementAdmin(admin.ModelAdmin):
     search_fields = ("user_id", "achievement_type")
     readonly_fields = ("achieved_at",)
     ordering = ("-achieved_at",)
+
+
+@admin.register(SearchHistory)
+class SearchHistoryAdmin(admin.ModelAdmin):
+    list_display = ("location", "source", "found", "result_count", "searched_at")
+    list_filter = ("source", "found", "searched_at")
+    search_fields = ("location",)
+    readonly_fields = ("searched_at",)
+    ordering = ("-searched_at",)
