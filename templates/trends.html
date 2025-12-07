@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Trends</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .content-section {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            color: #667eea;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .trend-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .trend-title {
+            color: #667eea;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+
+        .back-link {
+            color: white;
+            text-decoration: none;
+            margin-bottom: 20px;
+            display: inline-block;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .back-link:hover {
+            background: white;
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Dashboard</a>
+
+        <header>
+            <h1>📉 Weather Trends</h1>
+            <p>60-day historical weather patterns</p>
+        </header>
+
+        <div class="content-section">
+            <h2 class="section-title">Temperature Trends by City</h2>
+
+            {% for city, records in trends.items %}
+                <div class="trend-card">
+                    <div class="trend-title">{{ city }}</div>
+                    <div class="chart-container">
+                        <canvas id="chart-{{ forloop.counter }}"></canvas>
+                    </div>
+                </div>
+            {% empty %}
+                <p style="color: #999; padding: 30px; text-align: center;">No trend data available</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        const colors = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#00f2fe', '#43e97b', '#fa709a', '#fee140'];
+
+        {% for city, records in trends.items %}
+            const ctx{{ forloop.counter }} = document.getElementById('chart-{{ forloop.counter }}').getContext('2d');
+            const dates{{ forloop.counter }} = [
+                {% for record in records %}'{{ record.date }}'{{ forloop.last|yesno:","|safe }}{% endfor %}
+            ];
+            const temps{{ forloop.counter }} = [
+                {% for record in records %}{{ record.temp_avg|default:0 }}{{ forloop.last|yesno:","|safe }}{% endfor %}
+            ];
+
+            new Chart(ctx{{ forloop.counter }}, {
+                type: 'line',
+                data: {
+                    labels: dates{{ forloop.counter }},
+                    datasets: [{
+                        label: 'Average Temperature',
+                        data: temps{{ forloop.counter }},
+                        borderColor: colors[{{ forloop.counter0 }} % colors.length],
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.3,
+                        borderWidth: 2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Temperature (°C)'
+                            }
+                        }
+                    }
+                }
+            });
+        {% endfor %}
+    </script>
+</body>
+</html>
