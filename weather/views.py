@@ -1,4 +1,3 @@
-
 from django.shortcuts import render
 from django.db.models import Avg, Max, Min, Count, Q
 from django.http import JsonResponse
@@ -6,6 +5,14 @@ from .models import WeatherRecord, UserAchievement, SearchHistory
 from datetime import datetime, timedelta
 import json
 import requests
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Replace hardcoded API key with environment variable
+OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY')
 
 def dashboard(request):
     """Main dashboard with recent weather data and analytics"""
@@ -230,10 +237,10 @@ def search_location(request):
     # Not in database, try OpenWeather API
     try:
         # You need to set your OpenWeather API key
-        api_key = 'b9886e11e1a6240e380cfa855fafc9da'  # Replace with actual API key
+        # OPENWEATHER_API_KEY='your_api_key_here' # Replace with actual API key
         
         # Get current weather
-        url = f'https://api.openweathermap.org/data/2.5/weather?q={location}&appid={api_key}&units=metric'
+        url = f'https://api.openweathermap.org/data/2.5/weather?q={location}&appid={OPENWEATHER_API_KEY}&units=metric'
         response = requests.get(url, timeout=5)
         
         if response.status_code == 200:

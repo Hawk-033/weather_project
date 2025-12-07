@@ -95,6 +95,16 @@ This is an enhanced Django weather application that provides real-time weather d
    - Dashboard: http://localhost:8000/
    - Admin Panel: http://localhost:8000/admin/
 
+### Environment Variables
+
+To run this project, you need to set up the following environment variables in a `.env` file at the root of the project:
+
+```
+OPENWEATHER_API_KEY=your_api_key_here
+```
+
+Replace `your_api_key_here` with your actual OpenWeather API key. You can obtain an API key by signing up at [OpenWeather](https://openweathermap.org/).
+
 ## Application Structure
 
 ```
