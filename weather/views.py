@@ -14,6 +14,9 @@ load_dotenv()
 # Replace hardcoded API key with environment variable
 OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY')
 
+# Debugging: Log the loaded API key
+print(f"Loaded API Key: {OPENWEATHER_API_KEY}")
+
 def dashboard(request):
     """Main dashboard with recent weather data and analytics"""
     records = WeatherRecord.objects.all()[:30]
@@ -243,6 +246,9 @@ def search_location(request):
         url = f'https://api.openweathermap.org/data/2.5/weather?q={location}&appid={OPENWEATHER_API_KEY}&units=metric'
         response = requests.get(url, timeout=5)
         
+        # Debugging: Log the API response
+        print(f"API Response: {response.json()}")
+        
         if response.status_code == 200:
             weather_data = response.json()
             
@@ -297,3 +303,22 @@ def search_location(request):
             found=False
         )
         return JsonResponse({'error': f'An error occurred: {str(e)}'}, status=500)
+
+
+def api_search(request):
+    """API endpoint to search weather records by city or date."""
+    query = request.GET.get('q', '').strip()
+
+    if not query:
+        return JsonResponse({'error': 'Query parameter is required'}, status=400)
+
+    # Search weather records by city or date
+    results = WeatherRecord.objects.filter(
+        Q(city__icontains=query) |
+        Q(date__icontains=query)
+    ).values('city', 'date', 'temp_high', 'temp_low', 'temp_avg', 'precipitation', 'humidity', 'wind_speed', 'condition')
+
+    if not results.exists():
+        return JsonResponse({'message': 'No records found for the given query.'}, status=404)
+
+    return JsonResponse({'results': list(results)})

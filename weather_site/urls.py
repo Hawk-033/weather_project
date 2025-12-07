@@ -1,4 +1,3 @@
-
 from django.contrib import admin
 from django.urls import path
 from weather.views import (
@@ -8,7 +7,8 @@ from weather.views import (
     weather_trends,
     user_achievements,
     api_weather_data,
-    search_location
+    search_location,
+    api_search
 )
 
 urlpatterns = [
@@ -20,4 +20,5 @@ urlpatterns = [
     path('achievements/', user_achievements, name='achievements'),
     path('api/weather/', api_weather_data, name='api_weather_data'),
     path('api/search/', search_location, name='search_location'),
+    path('api/search/', api_search, name='api_search'),
 ]
